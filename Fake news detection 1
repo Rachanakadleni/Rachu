@@ -1,0 +1,46 @@
+# Sample dataset
+news_data <- data.frame(news_text = c("This is a real news article about politics.",
+                                      "This article contains fake news about the economy.",
+                                      "The weather forecast for tomorrow is sunny.",
+                                      "Breaking news: A new study reveals shocking facts!",
+                                      "Investors are optimistic about the stock market."),
+                        label = c(1, 0, 1, 1, 0))
+
+# Preprocess the text data
+corpus <- tolower(news_data$news_text)
+corpus <- gsub("[[:punct:]]", " ", corpus) # Remove punctuation
+corpus <- gsub("[[:digit:]]", "", corpus) # Remove digits
+
+# Split the text into words
+word_list <- strsplit(corpus, "\\s+")
+
+# Create a vocabulary
+vocabulary <- unique(unlist(word_list))
+
+# Create a document-term matrix
+dtm <- matrix(0, nrow = length(word_list), ncol = length(vocabulary), dimnames = list(NULL, vocabulary))
+
+# Fill in the document-term matrix
+for (i in seq_along(word_list)) {
+  dtm[i, match(word_list[[i]], vocabulary)] <- 1
+}
+
+# Convert the document-term matrix to a sparse matrix
+library(Matrix)
+dtm_sparse <- as(dtm, "sparseMatrix")
+
+# Train a Naive Bayes model
+library(e1071)
+nb_model <- naiveBayes(as.matrix(dtm_sparse), as.factor(news_data$label))
+
+# Predict labels for the entire dataset
+predictions <- predict(nb_model, as.matrix(dtm_sparse))
+
+# Convert the predicted labels to "fake" or "real"
+prediction_labels <- ifelse(predictions == 0, "fake", "real")
+
+# Add the predicted labels to the dataset
+news_data$predicted_label <- prediction_labels
+
+# Output the dataset with predicted labels
+print(news_data)
